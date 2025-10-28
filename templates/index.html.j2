@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>生成AIニュースまとめ - ainews.komee.org</title>
+  <meta name="description" content="OpenAI・Google・Hugging Faceなど世界のAIニュースを自動収集・要約。毎日更新。">
+  <style>
+    body{font-family:system-ui, -apple-system, Segoe UI, Roboto; margin:0; background:#0b0f14; color:#e6edf3;}
+    header{background:#121821;padding:16px;font-size:20px;font-weight:bold;border-bottom:1px solid #111722;}
+    a{color:#4cc2ff;text-decoration:none}
+    main{max-width:900px;margin:auto;padding:16px;}
+    article{background:#121821;margin:12px 0;padding:12px;border-radius:12px;border:1px solid #111722}
+    footer{color:#8b98a5;text-align:center;padding:20px;font-size:13px;border-top:1px solid #111722}
+    .muted{color:#8b98a5}
+  </style>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6238004847920381" crossorigin="anonymous"></script>
+</head>
+<body>
+<header>📰 生成AIニュースまとめ</header>
+<main>
+  <p class="muted">更新日: {{ today }}</p>
+  <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-6238004847920381" data-ad-slot="1896874949" data-ad-format="auto"></ins>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+
+  {% for d in days %}
+  <article><a href="news/{{ d }}.html">{{ d }} のニュース一覧</a></article>
+  {% endfor %}
+</main>
+<footer>© {{ today[:4] }} komee.org — 自動生成ニュース</footer>
+</body>
+</html>

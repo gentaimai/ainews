@@ -1,0 +1,9 @@
+{
+  "feeds": [
+    "https://openai.com/blog/rss",
+    "https://blog.google/technology/ai/rss/",
+    "https://huggingface.co/blog/feed.xml",
+    "https://venturebeat.com/category/ai/feed/",
+    "https://www.theverge.com/rss/artificial-intelligence/index.xml"
+  ]
+}
