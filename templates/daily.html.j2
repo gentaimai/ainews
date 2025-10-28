@@ -41,29 +41,91 @@
 <script>
   const SUM_API = 'https://news-summary.ainews-worker.workers.dev/summarize';
 
+  // .news 内から「要約対象URL」を見つける（.news-link が無ければ先頭の外部リンクを使用）
+  function pickArticleUrl(container) {
+    // 1) .news-link を優先
+    const preferred = container.querySelector('a.news-link[href^="http"]');
+    if (preferred?.href) return preferred.href;
+
+    // 2) 最初の外部リンク（http/https）を使用
+    const any = container.querySelector('a[href^="http"]');
+    if (any?.href) return any.href;
+
+    // 3) data-link 属性にURLが入っているケースにも対応（任意）
+    const data = container.getAttribute('data-link');
+    if (data && /^https?:\/\//.test(data)) return data;
+
+    return null;
+  }
+
   async function attachSummaries(root = document) {
-    const items = root.querySelectorAll('article.news');
-    for (const el of items) {
-      const link = el.querySelector('a.news-link');
-      const holder = el.querySelector('.news-summary');
-      if (!link || !holder) continue;
-      if (!link.href) continue;
+    const articles = Array.from(root.querySelectorAll('article.news'));
+
+    for (const el of articles) {
+      // プレースホルダ（既にテンプレに入っている想定。無ければ作る）
+      let holder = el.querySelector('.news-summary');
+      if (!holder) {
+        holder = document.createElement('div');
+        holder.className = 'news-summary loading';
+        holder.textContent = '要約を取得中…';
+        el.appendChild(holder);
+      }
+
+      // 既に処理済みならスキップ
+      if (holder.dataset.done === '1') continue;
+
+      const targetUrl = pickArticleUrl(el);
+      if (!targetUrl) {
+        holder.textContent = '（リンクが見つかりません）';
+        holder.classList.remove('loading');
+        holder.dataset.done = '1';
+        console.warn('[summary] link not found in', el);
+        continue;
+      }
 
       try {
-        const res = await fetch(`${SUM_API}?url=${encodeURIComponent(link.href)}`);
+        // 一応ログ（DevTools Console で原因追跡用）
+        console.debug('[summary] fetching:', targetUrl);
+
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort('timeout'), 15000); // 15s タイムアウト
+        const res = await fetch(`${SUM_API}?url=${encodeURIComponent(targetUrl)}`, { signal: ctrl.signal });
+        clearTimeout(timeout);
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
         const j = await res.json().catch(() => ({}));
         const text = (j.summary || '').trim();
+
         holder.textContent = text || '（要約なし）';
       } catch (e) {
         holder.textContent = '（要約の取得に失敗しました）';
+        console.error('[summary] fetch failed:', e);
       } finally {
         holder.classList.remove('loading');
+        holder.dataset.done = '1';
       }
     }
   }
 
   // ページ読込完了で実行
-  window.addEventListener('load', attachSummaries);
+  window.addEventListener('load', () => {
+    attachSummaries();
+
+    // 後から記事が追加されるケースに対応（必要なければ削除OK）
+    const obs = new MutationObserver(muts => {
+      for (const m of muts) {
+        for (const node of m.addedNodes) {
+          if (node?.nodeType !== 1) continue;
+          if (node.matches?.('article.news') || node.querySelector?.('article.news')) {
+            attachSummaries(node);
+          }
+        }
+      }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  });
 </script>
 
 </body>
