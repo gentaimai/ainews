@@ -13,6 +13,11 @@
     article{background:#121821;margin:12px 0;padding:12px;border-radius:12px;border:1px solid #111722}
     .src{color:#8b98a5;font-size:13px}
     footer{color:#8b98a5;text-align:center;padding:20px;font-size:13px;border-top:1px solid #111722}
+    .news { padding:8px 0; }
+    .news .news-summary{
+      margin-top:4px; font-size:12px; color:#8b98a5; line-height:1.5;
+    }
+    .news .news-summary.loading{ opacity:.7; }
   </style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6238004847920381" crossorigin="anonymous"></script>
 </head>
@@ -21,13 +26,45 @@
 <main>
   <h2>{{ date }} のニュース一覧</h2>
   {% for i in items %}
-  <article>
-    <a href="{{ i.link }}" target="_blank" rel="noopener"><b>{{ i.title }}</b></a>
-    <div class="src">{{ i.source }} — {{ i.date }}</div>
-    <p>{{ i.summary }}</p>
-  </article>
-  {% endfor %}
+<article class="news">
+  <a class="news-link" href="{{ i.link }}" target="_blank" rel="noopener"><b>{{ i.title }}</b></a>
+  <div class="src">{{ i.source }} — {{ i.date }}</div>
+  <p>{{ i.summary }}</p>
+
+  <!-- Worker から取得した 1行要約を差し込む領域（初期はローディング表示） -->
+  <div class="news-summary loading">要約を取得中…</div>
+</article>
+{% endfor %}
+
 </main>
 <footer>© {{ date[:4] }} komee.org — 自動生成ニュース</footer>
+<script>
+  const SUM_API = 'https://news-summary.ainews-worker.workers.dev/summarize';
+
+  async function attachSummaries(root = document) {
+    const items = root.querySelectorAll('article.news');
+    for (const el of items) {
+      const link = el.querySelector('a.news-link');
+      const holder = el.querySelector('.news-summary');
+      if (!link || !holder) continue;
+      if (!link.href) continue;
+
+      try {
+        const res = await fetch(`${SUM_API}?url=${encodeURIComponent(link.href)}`);
+        const j = await res.json().catch(() => ({}));
+        const text = (j.summary || '').trim();
+        holder.textContent = text || '（要約なし）';
+      } catch (e) {
+        holder.textContent = '（要約の取得に失敗しました）';
+      } finally {
+        holder.classList.remove('loading');
+      }
+    }
+  }
+
+  // ページ読込完了で実行
+  window.addEventListener('load', attachSummaries);
+</script>
+
 </body>
 </html>
