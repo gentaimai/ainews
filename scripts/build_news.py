@@ -50,7 +50,8 @@ def fetch_news():
     return sorted(items, key=lambda x: x["date"], reverse=True)
 
 def main():
-    today = datetime.date.today().isoformat()
+    now_jst = datetime.datetime.utcnow() + datetime.timedelta(hours=9)
+    today = now_jst.date().isoformat()
     items = fetch_news()
     if not items:
         print("No news fetched.")
